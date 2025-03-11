@@ -2,7 +2,7 @@
 ## Clonando o Repositório
 
 Para obter uma cópia local deste repositório, siga os passos abaixo:
-
+1
 ### Pré-requisitos
 
 Certifique-se de ter o Git instalado em sua máquina. Se ainda não tiver, baixe e instale a versão mais recente através do [site oficial](https://git-scm.com/).
