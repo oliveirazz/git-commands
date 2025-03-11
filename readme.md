@@ -31,3 +31,6 @@ Agora você tem uma cópia local do projeto e pode começar a trabalhar nele!
 
 Se precisar de mais informações sobre comandos Git, consulte a [documentação oficial](https://git-scm.com/doc).
 Passo a passo
+
+
+author: minha empresa
