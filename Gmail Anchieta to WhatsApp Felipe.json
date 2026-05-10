@@ -1,0 +1,442 @@
+{
+  "name": "Gmail Anchieta to WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "=in:inbox"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        48,
+        384
+      ],
+      "id": "e5817326-eef7-44e0-92c1-ab3434ab7c41",
+      "name": "Gmail Trigger",
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "Tales",
+        "remoteJid": "120363260722104309",
+        "messageText": "=📧 Novo email de {{ $('Gmail Trigger').item.json.From }}\n\nAssunto: {{ $('Gmail Trigger').item.json.Subject }}\n\nData: {{ $json.formattedDate }}\n\nMensagem: {{ $('AI Agent').item.json.output }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        608
+      ],
+      "id": "69557149-2165-43b6-acff-23ee785f7581",
+      "name": "Enviar texto",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": "={{[\"Label_3050297766776443886\"]}}"
+      },
+      "id": "8df65c38-5e5f-4d6e-9dc3-6b33ebf1e372",
+      "name": "Move to Folder",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1696,
+        400
+      ],
+      "webhookId": "b81ab81b-dbba-4d29-bc13-4910c8d0b01a"
+    },
+    {
+      "parameters": {
+        "resource": "label"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1456,
+        416
+      ],
+      "id": "55d3defb-1319-4805-8a21-cb0a03a979c7",
+      "name": "Get many labels",
+      "webhookId": "cf3ed87b-0164-40e2-b156-a43f45bc55f3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Gmail Trigger').item.json.text }}",
+        "options": {
+          "systemMessage": "=Você é um assistente pessoal inteligente. Ao receber um e-mail, faça o seguinte:\n\n1. Leia o conteúdo com atenção\n2. Crie um resumo claro e objetivo\n3. Identifique se há evento, reunião, prazo ou data importante\n\nResponda SEMPRE neste formato exato (para envio via WhatsApp):\n\n\n📧 *NOVO E-MAIL RECEBIDO*\n\n👤 *De:* \n📌 *Assunto:* \n\n📝 *Resumo:*\n[resumo em 2 a 4 frases diretas]\n\n📅 *Evento identificado:* [Sim / Não]\n[Se sim, informe: nome do evento, data, horário e local]\n\n⚠️ *Ação necessária:* [descreva se o usuário precisa fazer algo]\n\n\nUse linguagem simples e direta. Não inclua informações desnecessárias."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        608,
+        608
+      ],
+      "id": "231baa6b-ba19-4a22-a494-e8cadecdcc03",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        512,
+        864
+      ],
+      "id": "cda0dd85-703f-4397-bdf0-6b72510f1eae",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $today }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        768
+      ],
+      "id": "5b420bfe-d502-4e18-a2d1-c110b4d4fc37",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "instanceName": "=Tales",
+        "remoteJid": "120363260722104309",
+        "media": "={{ $json.imageBase64 }}",
+        "caption": "={{ $('Gmail Trigger').item.json.subject }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        336
+      ],
+      "id": "bae1d712-e68f-471d-94eb-4be7af475091",
+      "name": "Enviar imagem",
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "jsCode": "const html = $input.first().json.html;\n\n// Extrai o base64 da tag img\nconst match = html.match(/src=\"data:image\\/png;base64,([^\"]+)\"/);\n\nif (match) {\n  return [{\n    json: {\n      imageBase64: match[1],\n      mimeType: 'image/png'\n    }\n  }];\n}\n\nreturn [{ json: { imageBase64: null } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        368
+      ],
+      "id": "0f4fb4b6-bef4-4b82-b5e6-717e6216e19f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Gmail Trigger').item.json.from.value[0].address }}",
+              "rightValue": "anchieta",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "id": "e5fca3e4-d519-4378-9c7e-58f8649bafb8"
+            },
+            {
+              "leftValue": "={{ $('Gmail Trigger').item.json.from.value[0].address }}",
+              "rightValue": "unianchieta",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "id": "5415f133-8655-48f4-b621-c3bb62a848a1"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "ef184c0d-3eda-413b-9f81-4042a7957db8",
+      "name": "Verificação email institucional",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        304,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Verificação se o comunicação é por imagem",
+        "height": 96,
+        "width": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        528,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "15863653-894e-4872-a184-57a2f5039ddf",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "60e08295-78e3-4c5c-b7f7-b22ab3cacab8",
+              "leftValue": "={{ $json.html }}",
+              "rightValue": "src=\"data:image",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        576,
+        368
+      ],
+      "id": "af5006a4-8529-4fce-a434-8b6e70552e6a",
+      "name": "Verificação se comunicação é por imagem"
+    },
+    {
+      "parameters": {
+        "content": "Codigo em JavaScript que extrai a imagem do corpo do email",
+        "height": 96,
+        "width": 176,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        768,
+        240
+      ],
+      "typeVersion": 1,
+      "id": "dfdeccc2-2f5a-46d1-a878-e42f6626cbfd",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Agente de IA que realiza o resumo do comunicado Institucional enviado",
+        "height": 96,
+        "width": 192,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        336,
+        624
+      ],
+      "typeVersion": 1,
+      "id": "51f8e152-1893-4b45-9f9d-e9f8bc51a20b",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Pega as pastas do email",
+        "height": 80,
+        "width": 150,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1424,
+        304
+      ],
+      "typeVersion": 1,
+      "id": "5acf1aa3-d435-42e3-83fc-29b260334b4e",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Formação da data do email enviado",
+        "height": 80,
+        "width": 224
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        976,
+        928
+      ],
+      "typeVersion": 1,
+      "id": "6df4540f-53c0-493f-b1cb-c79a09a6b4c3",
+      "name": "Sticky Note7"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Verificação email institucional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar texto": {
+      "main": [
+        [
+          {
+            "node": "Get many labels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many labels": {
+      "main": [
+        [
+          {
+            "node": "Move to Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Date & Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "main": [
+        [
+          {
+            "node": "Enviar texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar imagem": {
+      "main": [
+        [
+          {
+            "node": "Get many labels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Enviar imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificação email institucional": {
+      "main": [
+        [
+          {
+            "node": "Verificação se comunicação é por imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificação se comunicação é por imagem": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "15ae0cd5-8f5c-4341-9e48-9887319f960a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3ed6f3ddc6dbd3643a93de12f7779754d88343ff5b506bbd9be2e3f7fd8c01e9"
+  },
+  "id": "D02x3wibkJ5jNmSO",
+  "tags": []
+}
